@@ -5,57 +5,72 @@ import (
 	"io/ioutil"
 	"net/http"
 
-	"github.com/labstack/echo"
+	"github.com/gin-gonic/gin"
 )
 
 // JSONResult json result
 type JSONResult struct {
-	Code int         `json:"code"`
-	Data interface{} `json:"data"`
+	Code    int         `json:"code"`
+	Data    interface{} `json:"data,omitempty"`
+	Message string      `json:"msg,omitempty"`
 }
 
 // NewJSONBodyHTTPHandle returns a http handle JSON body
-func NewJSONBodyHTTPHandle(factory func() interface{}, handler func(interface{}) (*JSONResult, error)) func(echo.Context) error {
-	return func(ctx echo.Context) error {
+func NewJSONBodyHTTPHandle(factory func() interface{}, handler func(interface{}) (*JSONResult, error)) func(c *gin.Context) {
+	return func(c *gin.Context) {
 		value := factory()
-		err := ReadJSONFromBody(ctx, value)
+		err := ReadJSONFromBody(c, value)
 		if err != nil {
-			return ctx.JSON(http.StatusBadRequest, &JSONResult{
-				Data: err.Error(),
+			c.JSON(http.StatusOK, &JSONResult{
+				Code:    http.StatusBadRequest,
+				Message: err.Error(),
 			})
+			return
 		}
 
 		result, err := handler(value)
 		if err != nil {
-			return ctx.NoContent(http.StatusInternalServerError)
+			c.JSON(http.StatusOK, &JSONResult{
+				Code:    http.StatusInternalServerError,
+				Message: err.Error(),
+			})
+			return
 		}
 
-		return ctx.JSON(http.StatusOK, result)
+		c.JSON(http.StatusOK, result)
+		return
 	}
 }
 
 // NewGetHTTPHandle return get http handle
-func NewGetHTTPHandle(factory func(echo.Context) (interface{}, error), handler func(interface{}) (*JSONResult, error)) func(echo.Context) error {
-	return func(ctx echo.Context) error {
-		value, err := factory(ctx)
+func NewGetHTTPHandle(factory func(*gin.Context) (interface{}, error), handler func(interface{}) (*JSONResult, error)) func(c *gin.Context) {
+	return func(c *gin.Context) {
+		value, err := factory(c)
 		if err != nil {
-			return ctx.JSON(http.StatusBadRequest, &JSONResult{
-				Data: err.Error(),
+			c.JSON(http.StatusOK, &JSONResult{
+				Code:    http.StatusBadRequest,
+				Message: err.Error(),
 			})
+			return
 		}
 
 		result, err := handler(value)
 		if err != nil {
-			return ctx.NoContent(http.StatusInternalServerError)
+			c.JSON(http.StatusOK, &JSONResult{
+				Code:    http.StatusInternalServerError,
+				Message: err.Error(),
+			})
+			return
 		}
 
-		return ctx.JSON(http.StatusOK, result)
+		c.JSON(http.StatusOK, result)
+		return
 	}
 }
 
 // ReadJSONFromBody read json body
-func ReadJSONFromBody(ctx echo.Context, value interface{}) error {
-	data, err := ioutil.ReadAll(ctx.Request().Body)
+func ReadJSONFromBody(ctx *gin.Context, value interface{}) error {
+	data, err := ioutil.ReadAll(ctx.Request.Body)
 	if err != nil {
 		return err
 	}

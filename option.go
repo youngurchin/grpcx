@@ -6,7 +6,7 @@ import (
 	"github.com/coreos/etcd/clientv3"
 	etcdnaming "github.com/coreos/etcd/clientv3/naming"
 	"github.com/fagongzi/log"
-	"github.com/labstack/echo"
+	"github.com/gin-gonic/gin"
 	"google.golang.org/grpc/naming"
 )
 
@@ -16,7 +16,7 @@ type ServerOption func(*serverOptions)
 type serverOptions struct {
 	publisher Publisher
 	httpAddr  string
-	httpSetup func(*echo.Echo)
+	httpSetup func(*gin.Engine)
 }
 
 // WithEtcdPublisher use etcd to publish service
@@ -32,7 +32,7 @@ func WithEtcdPublisher(client *clientv3.Client, prefix string, ttl int64, timeou
 }
 
 // WithHTTPServer with http server
-func WithHTTPServer(addr string, httpSetup func(*echo.Echo)) ServerOption {
+func WithHTTPServer(addr string, httpSetup func(*gin.Engine)) ServerOption {
 	return func(opts *serverOptions) {
 		opts.httpAddr = addr
 		opts.httpSetup = httpSetup

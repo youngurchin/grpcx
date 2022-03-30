@@ -1,22 +1,18 @@
 package grpcx
 
 import (
-	"context"
-
 	"github.com/fagongzi/log"
-	"github.com/labstack/echo"
-	md "github.com/labstack/echo/middleware"
+	"github.com/gin-gonic/gin"
 )
 
 type httpServer struct {
 	addr   string
-	server *echo.Echo
+	server *gin.Engine
 }
 
-func newHTTPServer(addr string, httpSetup func(*echo.Echo)) *httpServer {
-	server := echo.New()
+func newHTTPServer(addr string, httpSetup func(*gin.Engine)) *httpServer {
+	server := gin.Default()
 	httpSetup(server)
-	server.Use(md.Recover())
 
 	return &httpServer{
 		addr:   addr,
@@ -26,9 +22,9 @@ func newHTTPServer(addr string, httpSetup func(*echo.Echo)) *httpServer {
 
 func (s *httpServer) start() error {
 	log.Infof("rpc: start a grpc http proxy server at %s", s.addr)
-	return s.server.Start(s.addr)
+	return s.server.Run(s.addr)
 }
 
 func (s *httpServer) stop() error {
-	return s.server.Shutdown(context.Background())
+	return nil
 }
